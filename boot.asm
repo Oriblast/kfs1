@@ -38,3 +38,6 @@ _start:
 .hang:
     hlt
     jmp .hang
+
+; Pile non exécutable (supprime le warning de ld)
+section .note.GNU-stack noalloc noexec nowrite progbits

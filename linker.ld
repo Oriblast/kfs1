@@ -10,25 +10,25 @@ SECTIONS
     .text BLOCK(4K) : ALIGN(4K)
     {
         *(.multiboot)
-        *(.text)
+        *(.text*)
     }
 
     /* Données en lecture seule (chaînes de caractères constantes, etc.) */
     .rodata BLOCK(4K) : ALIGN(4K)
     {
-        *(.rodata)
+        *(.rodata*)
     }
 
     /* Données initialisées (variables globales avec des valeurs de départ) */
     .data BLOCK(4K) : ALIGN(4K)
     {
-        *(.data)
+        *(.data*)
     }
 
     /* Données non initialisées et pile (stack) */
     .bss BLOCK(4K) : ALIGN(4K)
     {
         *(COMMON)
-        *(.bss)
+        *(.bss*)
     }
 }

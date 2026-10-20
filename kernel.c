@@ -1,50 +1,66 @@
-/* --- kernel.c --- */
+#include "types.h"
+#include "vga.h"
+#include "printk.h"
+#include "keyboard.h"
 
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
-typedef unsigned int uint32_t;
+static const char* logo[] = {
+    "        :::      ::::::::",
+    "      :+:      :+:    :+:",
+    "    +:+ +:+         +:+",
+    "  +#+  +:+       +#+",
+    "+#+#+#+#+#+   +#+",
+    "     #+#    #+#",
+    "    ###   ########.fr",
+};
 
-#define VGA_ADDRESS 0xB8000
-#define VGA_WIDTH 80
-#define VGA_HEIGHT 25
+static void print_banner(int screen) {
+    terminal_setcolor(vga_color(VGA_LIGHT_CYAN, VGA_BLACK));
+    for (size_t i = 0; i < sizeof(logo) / sizeof(logo[0]); i++)
+        printk("%s\n", logo[i]);
 
-/* Fonction pour effacer l'écran */
-void vga_clear(uint8_t color) {
-    volatile uint16_t* vga_buffer = (volatile uint16_t*) VGA_ADDRESS;
-    uint16_t blank = ((uint16_t)color << 8) | ' ';
-    
-    for (int y = 0; y < VGA_HEIGHT; y++) {
-        for (int x = 0; x < VGA_WIDTH; x++) {
-            vga_buffer[y * VGA_WIDTH + x] = blank;
-        }
-    }
+    terminal_setcolor(vga_color(VGA_YELLOW, VGA_BLACK));
+    printk("\nKFS_1 - Kernel from Scratch");
+    terminal_setcolor(vga_color(VGA_DARK_GREY, VGA_BLACK));
+    printk("   [screen %d/%d]\n", screen + 1, VGA_SCREENS);
+
+    terminal_setcolor(vga_color(VGA_LIGHT_GREEN, VGA_BLACK));
+    printk("F1-F%d : change screen   F12 : QWERTY/AZERTY\n\n", VGA_SCREENS);
+    terminal_setcolor(vga_color(VGA_LIGHT_GREY, VGA_BLACK));
 }
 
-void vga_putchar(char c, uint8_t color, int x, int y) {
-    volatile uint16_t* vga_buffer = (volatile uint16_t*) VGA_ADDRESS;
-    const int index = y * VGA_WIDTH + x;
-    vga_buffer[index] = ((uint16_t)color << 8) | (uint16_t)c;
-}
-
-void vga_write(const char* str, uint8_t color, int x, int y) {
-    int i = 0;
-    while (str[i] != '\0') {
-        vga_putchar(str[i], color, x + i, y);
-        i++;
-    }
+static void printk_demo(void) {
+    terminal_setcolor(vga_color(VGA_LIGHT_MAGENTA, VGA_BLACK));
+    printk("printk: %d %i %u | %x %X %08x | %c %s %p %%\n\n",
+           42, -42, 42u, 0xcafe, 0xCAFE, 0x42, '*', "str", (void*)VGA_ADDRESS);
+    terminal_setcolor(vga_color(VGA_LIGHT_GREY, VGA_BLACK));
 }
 
 void kmain(void) {
-    uint8_t color = 0x0F; // Texte blanc sur fond noir
+    terminal_init();
 
-    /* On efface l'écran proprement au démarrage */
-    vga_clear(color);
+    /* Chaque écran virtuel reçoit sa bannière, puis on revient sur le premier */
+    for (int i = VGA_SCREENS - 1; i >= 0; i--) {
+        terminal_switch(i);
+        print_banner(i);
+    }
+    printk_demo();
 
-    /* Affichage de nos messages sur un écran propre */
-    vga_write("42 - Kernel from Scratch : KFS_1", color, 0, 0);
-    vga_write("Kernel booted successfully !", color, 0, 2);
-
+    /* Pas d'interruptions (pas encore d'IDT) : on interroge le clavier en boucle */
     while (1) {
-        __asm__ __volatile__("hlt");
+        int key = keyboard_read();
+
+        if (key == 0) {
+            __asm__ __volatile__("pause");
+        } else if (key >= KEY_F1 && key < KEY_F1 + VGA_SCREENS) {
+            terminal_switch(key - KEY_F1);
+        } else if (key == KEY_F12) {
+            enum keyboard_layout next = keyboard_get_layout() == LAYOUT_QWERTY ? LAYOUT_AZERTY : LAYOUT_QWERTY;
+            keyboard_set_layout(next);
+            terminal_setcolor(vga_color(VGA_DARK_GREY, VGA_BLACK));
+            printk("[layout: %s]\n", next == LAYOUT_AZERTY ? "AZERTY" : "QWERTY");
+            terminal_setcolor(vga_color(VGA_LIGHT_GREY, VGA_BLACK));
+        } else if (key < 0x100) {
+            terminal_putchar((char)key);
+        }
     }
 }

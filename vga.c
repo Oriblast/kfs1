@@ -2,12 +2,9 @@
 #include "io.h"
 
 #define VGA_MEMORY ((volatile uint16_t*) VGA_ADDRESS)
-
-/* Ports du contrôleur CRT de la carte VGA (registre d'index + registre de données) */
 #define CRT_INDEX 0x3D4
 #define CRT_DATA  0x3D5
 
-/* Chaque écran virtuel garde sa propre copie du contenu et sa position */
 typedef struct {
     uint16_t buffer[VGA_WIDTH * VGA_HEIGHT];
     int row;
@@ -19,7 +16,6 @@ static screen_t screens[VGA_SCREENS];
 static int current = 0;
 
 static inline uint16_t vga_entry(char c, uint8_t color) {
-    /* Cast en uint8_t : char est signé, un caractère >= 128 écraserait la couleur */
     return ((uint16_t)color << 8) | (uint8_t)c;
 }
 
@@ -39,7 +35,6 @@ static void cursor_update(void) {
     outb(CRT_DATA, (uint8_t)(pos >> 8));
 }
 
-/* Recopie l'écran actif dans la mémoire vidéo */
 static void refresh(void) {
     for (int i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++)
         VGA_MEMORY[i] = screens[current].buffer[i];
@@ -60,8 +55,6 @@ static void screen_clear(screen_t* s) {
     s->row = 0;
     s->col = 0;
 }
-
-/* Remonte tout d'une ligne et vide la dernière */
 static void scroll(screen_t* s) {
     uint16_t blank = vga_entry(' ', s->color);
 

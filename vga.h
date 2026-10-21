@@ -27,7 +27,6 @@ enum vga_color {
     VGA_WHITE = 15,
 };
 
-/* Octet d'attribut : fond sur les 4 bits de poids fort, texte sur les 4 bits de poids faible */
 static inline uint8_t vga_color(enum vga_color fg, enum vga_color bg) {
     return (uint8_t)(fg | bg << 4);
 }

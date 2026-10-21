@@ -37,18 +37,13 @@ static void printk_demo(void) {
 
 void kmain(void) {
     terminal_init();
-
-    /* Chaque écran virtuel reçoit sa bannière, puis on revient sur le premier */
     for (int i = VGA_SCREENS - 1; i >= 0; i--) {
         terminal_switch(i);
         print_banner(i);
     }
     printk_demo();
-
-    /* Pas d'interruptions (pas encore d'IDT) : on interroge le clavier en boucle */
     while (1) {
         int key = keyboard_read();
-
         if (key == 0) {
             __asm__ __volatile__("pause");
         } else if (key >= KEY_F1 && key < KEY_F1 + VGA_SCREENS) {

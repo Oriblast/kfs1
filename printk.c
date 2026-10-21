@@ -3,7 +3,6 @@
 #include "string.h"
 #include "vga.h"
 
-/* Arguments variables via les builtins du compilateur (aucun header de la libc) */
 typedef __builtin_va_list va_list;
 #define va_start(ap, last) __builtin_va_start(ap, last)
 #define va_arg(ap, type)   __builtin_va_arg(ap, type)
@@ -21,7 +20,6 @@ static int put_padded(const char* str, int width, char pad) {
     return count + len;
 }
 
-/* Convertit un nombre en texte dans la base donnée, de droite à gauche */
 static char* utoa(uint32_t n, unsigned base, int upper, char* end) {
     const char* digits = upper ? "0123456789ABCDEF" : "0123456789abcdef";
 
@@ -70,7 +68,6 @@ int printk(const char* fmt, ...) {
         case 'd':
         case 'i': {
             int n = va_arg(ap, int);
-            /* Passage par uint32_t pour gérer INT_MIN sans dépassement */
             char* s = utoa(n < 0 ? -(uint32_t)n : (uint32_t)n, 10, 0, buf + sizeof(buf) - 1);
             if (n < 0) {
                 if (pad == '0') {

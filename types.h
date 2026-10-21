@@ -1,7 +1,6 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-/* Types à taille fixe (pas de <stdint.h> : aucune lib de l'hôte) */
 typedef unsigned char  uint8_t;
 typedef unsigned short uint16_t;
 typedef unsigned int   uint32_t;

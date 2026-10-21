@@ -1,11 +1,8 @@
 #include "keyboard.h"
 #include "io.h"
 
-/* Contrôleur clavier PS/2 */
 #define KBD_DATA   0x60
 #define KBD_STATUS 0x64
-
-/* Scancodes (jeu 1) des touches de modification */
 #define SC_LCTRL     0x1D
 #define SC_LSHIFT    0x2A
 #define SC_RSHIFT    0x36
@@ -18,7 +15,6 @@
 #define SC_EXTENDED  0xE0
 #define SC_RELEASED  0x80
 
-/* Table : scancode -> caractère. L'index est la position physique de la touche */
 static const char qwerty_normal[128] = {
     0, 27, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
     '\t', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n',
@@ -37,7 +33,6 @@ static const char qwerty_shift[128] = {
     [0x56] = '|',
 };
 
-/* Les caractères accentués sont les codes de la page de code 437 de la carte VGA */
 static const char azerty_normal[128] = {
     0, 27, '&', '\x82', '"', '\'', '(', '-', '\x8A', '_', '\x87', '\x85', ')', '=', '\b',
     '\t', 'a', 'z', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '^', '$', '\n',
@@ -79,7 +74,6 @@ static char translate(uint8_t sc) {
 
     char c = shift ? shifted[sc] : normal[sc];
 
-    /* Caps Lock n'inverse la casse que des lettres */
     if (capslock) {
         if (c >= 'a' && c <= 'z')
             c -= 'a' - 'A';
@@ -90,7 +84,6 @@ static char translate(uint8_t sc) {
 }
 
 int keyboard_read(void) {
-    /* Bit 0 du registre d'état : une donnée attend d'être lue */
     if (!(inb(KBD_STATUS) & 1))
         return 0;
 
@@ -100,11 +93,8 @@ int keyboard_read(void) {
         extended = 1;
         return 0;
     }
-
     int released = sc & SC_RELEASED;
     sc &= ~SC_RELEASED;
-
-    /* Touches préfixées par 0xE0 : seules AltGr, Ctrl droit et Entrée du pavé nous intéressent */
     if (extended) {
         extended = 0;
         if (sc == SC_ALT)
@@ -115,7 +105,6 @@ int keyboard_read(void) {
             return '\n';
         return 0;
     }
-
     switch (sc) {
     case SC_LSHIFT:
     case SC_RSHIFT:

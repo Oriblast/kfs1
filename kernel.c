@@ -1,6 +1,6 @@
-#include "types.h"
 #include "vga.h"
 #include "printk.h"
+#include "gdt.h"
 #include "keyboard.h"
 
 static const char* logo[] = {
@@ -35,13 +35,17 @@ static void printk_demo(void) {
     terminal_setcolor(vga_color(VGA_LIGHT_GREY, VGA_BLACK));
 }
 
+
 void kmain(void) {
     terminal_init();
+
     for (int i = VGA_SCREENS - 1; i >= 0; i--) {
         terminal_switch(i);
         print_banner(i);
     }
     printk_demo();
+    init_gdt();
+    print_kernel_stack();
     while (1) {
         int key = keyboard_read();
         if (key == 0) {

@@ -1,3 +1,4 @@
+section .text
 global gdt_flush
 
 gdt_flush:
@@ -12,5 +13,8 @@ gdt_flush:
     mov es, ax
     mov fs, ax
     mov gs, ax
+    mov ax, 0x18
     mov ss, ax
     ret
+
+section .note.GNU-stack noalloc noexec nowrite progbits

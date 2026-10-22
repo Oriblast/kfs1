@@ -4,14 +4,15 @@ LD = ld
 
 CFLAGS = -m32 -ffreestanding -O2 -Wall -Wextra \
          -fno-builtin -fno-exceptions -fno-stack-protector \
-         -nostdlib -nodefaultlibs -fno-pie -fno-asynchronous-unwind-tables
+         -nostdlib -nodefaultlibs -fno-pie -fno-asynchronous-unwind-tables \
+		 --param=min-pagesize=0 -fno-omit-frame-pointer
 
 ASFLAGS = -f elf32
 LDFLAGS = -m elf_i386 -T linker.ld
 
-OBJ = boot.o kernel.o vga.o string.o printk.o keyboard.o gdt.o gdt_flush.o
+OBJ = boot.o kernel.o vga.o string.o printk.o keyboard.o gdt.o gdt_flush.o stack.o shell.o
 KERNEL = kernel.bin
-ISO = kfs_1.iso
+ISO = kfs_2.iso
 
 all: $(ISO)
 

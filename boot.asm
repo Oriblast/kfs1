@@ -11,6 +11,8 @@ align 4
     dd CHECKSUM
 
 section .bss
+global stack_bottom
+global stack_top
 align 16
 stack_bottom:
     resb 16384
@@ -22,6 +24,7 @@ extern kmain
 
 _start:
     mov esp, stack_top
+    xor ebp, ebp
     call kmain
     cli
 .hang:

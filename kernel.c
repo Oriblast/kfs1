@@ -1,7 +1,9 @@
 #include "vga.h"
 #include "printk.h"
 #include "gdt.h"
+#include "stack.h"
 #include "keyboard.h"
+#include "shell.h"
 
 static const char* logo[] = {
     "        :::      ::::::::",
@@ -19,12 +21,12 @@ static void print_banner(int screen) {
         printk("%s\n", logo[i]);
 
     terminal_setcolor(vga_color(VGA_YELLOW, VGA_BLACK));
-    printk("\nKFS_1 - Kernel from Scratch");
+    printk("\nKFS_2 - Kernel from Scratch");
     terminal_setcolor(vga_color(VGA_DARK_GREY, VGA_BLACK));
     printk("   [screen %d/%d]\n", screen + 1, VGA_SCREENS);
 
     terminal_setcolor(vga_color(VGA_LIGHT_GREEN, VGA_BLACK));
-    printk("F1-F%d : change screen   F12 : QWERTY/AZERTY\n\n", VGA_SCREENS);
+    printk("F1-F%d : change screen   F2 : kernel stack   tape 'help'\n\n", VGA_SCREENS);
     terminal_setcolor(vga_color(VGA_LIGHT_GREY, VGA_BLACK));
 }
 
@@ -37,6 +39,7 @@ static void printk_demo(void) {
 
 
 void kmain(void) {
+    init_gdt();
     terminal_init();
 
     for (int i = VGA_SCREENS - 1; i >= 0; i--) {
@@ -44,22 +47,20 @@ void kmain(void) {
         print_banner(i);
     }
     printk_demo();
-    init_gdt();
+
+    terminal_switch(1);
+    terminal_clear();
     print_kernel_stack();
+    terminal_switch(0);
+
+    shell_init();
+
+    /* Pas d'interruptions (pas encore d'IDT) : on interroge le clavier en boucle */
     while (1) {
         int key = keyboard_read();
-        if (key == 0) {
+        if (key == 0)
             __asm__ __volatile__("pause");
-        } else if (key >= KEY_F1 && key < KEY_F1 + VGA_SCREENS) {
-            terminal_switch(key - KEY_F1);
-        } else if (key == KEY_F12) {
-            enum keyboard_layout next = keyboard_get_layout() == LAYOUT_QWERTY ? LAYOUT_AZERTY : LAYOUT_QWERTY;
-            keyboard_set_layout(next);
-            terminal_setcolor(vga_color(VGA_DARK_GREY, VGA_BLACK));
-            printk("[layout: %s]\n", next == LAYOUT_AZERTY ? "AZERTY" : "QWERTY");
-            terminal_setcolor(vga_color(VGA_LIGHT_GREY, VGA_BLACK));
-        } else if (key < 0x100) {
-            terminal_putchar((char)key);
-        }
+        else
+            shell_handle_key(key);
     }
 }

@@ -18,6 +18,6 @@ struct gdt_ptr {
 } __attribute__((packed));
 
 void init_gdt(void);
-void print_kernel_stack(void);
+void gdt_print(void);
 
 #endif

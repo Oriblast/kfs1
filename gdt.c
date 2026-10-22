@@ -1,4 +1,3 @@
-/* --- gdt.c --- */
 #include "gdt.h"
 #include "printk.h"
 
@@ -37,17 +36,35 @@ void init_gdt(void) {
     gdt_flush((uint32_t)&gp);
 }
 
-void print_kernel_stack(void) {
-    uint32_t esp, ebp;
-    
-    __asm__ __volatile__("mov %%esp, %0" : "=r"(esp));
-    __asm__ __volatile__("mov %%ebp, %0" : "=r"(ebp));
+static const char* gdt_names[GDT_ENTRIES] = {
+    "null", "kernel code", "kernel data", "kernel stack",
+    "user code", "user data", "user stack",
+};
 
-    printk("=== KERNEL STACK DUMP ===\n");
-    printk("ESP: 0x%x | EBP: 0x%x\n", esp, ebp);
+/* Relit la GDT telle que le CPU la voit : adresse donnée par sgdt, registres de segment */
+void gdt_print(void) {
+    struct gdt_ptr gdtr;
+    uint16_t cs, ds, ss;
 
-    uint32_t *stack_ptr = (uint32_t *)esp;
-    for (int i = 0; i < 16; i++) {
-        printk("  [ESP + 0x%x] = 0x%x\n", i * 4, stack_ptr[i]);
+    __asm__ __volatile__("sgdt %0" : "=m"(gdtr));
+    __asm__ __volatile__("mov %%cs, %0" : "=r"(cs));
+    __asm__ __volatile__("mov %%ds, %0" : "=r"(ds));
+    __asm__ __volatile__("mov %%ss, %0" : "=r"(ss));
+
+    printk("GDTR base 0x%08x  limite %u  (%u entrees)\n", gdtr.base, gdtr.limit, (gdtr.limit + 1) / 8);
+    printk("CS 0x%02x  DS 0x%02x  SS 0x%02x\n", cs, ds, ss);
+    printk("sel  base       limite     access flags ring type\n");
+
+    const struct gdt_entry* table = (const struct gdt_entry*)gdtr.base;
+    for (uint32_t i = 0; i < (gdtr.limit + 1u) / 8 && i < GDT_ENTRIES; i++) {
+        const struct gdt_entry* e = &table[i];
+        uint32_t base = e->base_low | (uint32_t)e->base_middle << 16 | (uint32_t)e->base_high << 24;
+        uint32_t limit = e->limit_low | (uint32_t)(e->granularity & 0x0F) << 16;
+        if (e->granularity & 0x80)
+            limit = limit << 12 | 0xFFF;
+
+        printk("0x%02x 0x%08x 0x%08x 0x%02x   0x%x   %d    %s\n",
+               i * 8, base, limit, e->access, e->granularity >> 4,
+               (e->access >> 5) & 3, gdt_names[i]);
     }
 }
